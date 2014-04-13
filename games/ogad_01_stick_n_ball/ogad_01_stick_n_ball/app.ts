@@ -158,7 +158,7 @@ class Ball implements GameEntity {
 
     checkCollision(stick: Stick) {
         if (this.x > stick.x - 50 && this.x < stick.x + 50 &&
-            this.y > stick.y - 10 && this.y < stick.y + 10) {
+            this.y > stick.y - 10 && this.y < stick.y + 20) {
             
             this.sx = -this.bounceSpeed * Math.sin(stick.angle * Math.PI/180);
             this.sy = -this.bounceSpeed * Math.cos(stick.angle * Math.PI/180);
