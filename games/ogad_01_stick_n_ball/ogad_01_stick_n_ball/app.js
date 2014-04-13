@@ -7,6 +7,8 @@
         var stick = new Stick();
         this.entities.push(stick);
 
+        this.entities.push(new Ball(200, 10, stick));
+
         this.canvasElement = document.getElementById("game-canvas");
         this.canvasElement.onmousemove = function (e) {
             return stick.onMouseMove(e);
@@ -17,10 +19,10 @@
             return _this.update(dt);
         });
     }
-    GameCanvas.prototype.update = function (dt) {
+    GameCanvas.prototype.update = function (timeStamp) {
         var _this = this;
-        this.time.deltaTime = dt;
-        this.time.totalTime = this.time.totalTime + dt;
+        this.time.deltaTime = timeStamp - (this.time.totalTime || timeStamp);
+        this.time.totalTime = timeStamp;
 
         this.canvas.clearRect(0, 0, 600, 400);
         this.entities.forEach(function (ge) {
@@ -55,8 +57,15 @@ var Stick = (function () {
     };
 
     Stick.prototype.draw = function (gc) {
+        gc.save();
+
         gc.fillStyle = "rgb(200,0,0)";
-        gc.fillRect(this.x, this.y, 100, 20);
+
+        gc.translate(this.x, this.y);
+        gc.rotate(-this.angle * (Math.PI / 180));
+        gc.fillRect(-50, -10, 100, 20);
+
+        gc.restore();
     };
 
     Stick.prototype.onMouseMove = function (event) {
@@ -73,8 +82,48 @@ var Stick = (function () {
 })();
 
 var Ball = (function () {
-    function Ball() {
+    function Ball(x, y, stick) {
+        this.x = x;
+        this.y = y;
+
+        this.sx = 0;
+        this.sy = 0;
+
+        this.gravity = 10.0;
+        this.stick = stick;
+
+        this.bounceSpeed = 10;
     }
+    Ball.prototype.update = function (dt) {
+        this.sy += this.gravity * (dt.deltaTime / 1000);
+
+        this.checkCollision(this.stick);
+
+        this.x += this.sx;
+        this.y += this.sy;
+
+        if (this.x < 0 || this.x > 600) {
+            this.sx *= -1;
+            this.x += this.sx * 2;
+        }
+    };
+
+    Ball.prototype.draw = function (gc) {
+        gc.save();
+
+        gc.fillStyle = "rgb(200,0,0)";
+        gc.translate(this.x, this.y);
+        gc.fillRect(-10, -10, 20, 20);
+
+        gc.restore();
+    };
+
+    Ball.prototype.checkCollision = function (stick) {
+        if (this.x > stick.x - 50 && this.x < stick.x + 50 && this.y > stick.y - 10 && this.y < stick.y + 10) {
+            this.sx = -this.bounceSpeed * Math.sin(stick.angle * Math.PI / 180);
+            this.sy = -this.bounceSpeed * Math.cos(stick.angle * Math.PI / 180);
+        }
+    };
     return Ball;
 })();
 

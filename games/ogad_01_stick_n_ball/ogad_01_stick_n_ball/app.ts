@@ -12,6 +12,8 @@ class GameCanvas {
         var stick: Stick = new Stick();
         this.entities.push(stick);
 
+        this.entities.push(new Ball(200,10, stick));
+
         this.canvasElement = <HTMLCanvasElement> document.getElementById("game-canvas")
         this.canvasElement.onmousemove = (e) => stick.onMouseMove(e);
 
@@ -19,9 +21,9 @@ class GameCanvas {
         window.requestAnimationFrame((dt) => this.update(dt));
     }
 
-    update(dt: number) {
-        this.time.deltaTime = dt;
-        this.time.totalTime = this.time.totalTime + dt;
+    update(timeStamp: number) {
+        this.time.deltaTime = timeStamp - (this.time.totalTime || timeStamp);
+        this.time.totalTime = timeStamp;
 
         this.canvas.clearRect(0, 0, 600, 400);
         this.entities.forEach((ge: GameEntity) => { ge.update(this.time); ge.draw(this.canvas); } );
@@ -48,7 +50,6 @@ interface GameEntity {
     sy: number
 
     angle: number;
-    speed: number;
 
     update(dt: GameTime);
     draw(gc: CanvasRenderingContext2D);
@@ -80,8 +81,16 @@ class Stick implements GameEntity {
     }
 
     draw(gc: CanvasRenderingContext2D) {
+
+        gc.save();
+
         gc.fillStyle = "rgb(200,0,0)";
-        gc.fillRect(this.x, this.y, 100, 20);
+
+        gc.translate(this.x, this.y);
+        gc.rotate(-this.angle * (Math.PI/180));
+        gc.fillRect(-50, -10, 100, 20);
+
+        gc.restore();
     }
 
     onMouseMove(event: MouseEvent) {
@@ -96,8 +105,65 @@ class Stick implements GameEntity {
     }
 }
 
-class Ball {
+class Ball implements GameEntity {
+    x: number;
+    y: number;
 
+    sx: number;
+    sy: number
+
+    angle: number;
+
+    gravity: number;
+    stick: Stick;
+    bounceSpeed: number;
+
+    constructor(x: number, y: number, stick: Stick) {
+        this.x = x;
+        this.y = y;
+
+        this.sx = 0;
+        this.sy = 0;
+
+        this.gravity = 10.0;
+        this.stick = stick;
+
+        this.bounceSpeed = 10;
+    }
+
+    update(dt: GameTime) {
+        this.sy += this.gravity * (dt.deltaTime/1000);
+
+        this.checkCollision(this.stick);
+
+        this.x += this.sx;
+        this.y += this.sy;
+
+        if (this.x < 0 || this.x > 600) {
+            this.sx *= -1;
+            this.x += this.sx * 2;
+        }
+    }
+
+    draw(gc: CanvasRenderingContext2D) {
+
+        gc.save();
+
+        gc.fillStyle = "rgb(200,0,0)";
+        gc.translate(this.x, this.y);
+        gc.fillRect(-10, -10, 20, 20);
+
+        gc.restore();
+    }
+
+    checkCollision(stick: Stick) {
+        if (this.x > stick.x - 50 && this.x < stick.x + 50 &&
+            this.y > stick.y - 10 && this.y < stick.y + 10) {
+            
+            this.sx = -this.bounceSpeed * Math.sin(stick.angle * Math.PI/180);
+            this.sy = -this.bounceSpeed * Math.cos(stick.angle * Math.PI/180);
+        }
+    }
 }
 
 var gameCanvas: GameCanvas;
